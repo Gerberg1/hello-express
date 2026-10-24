@@ -19,6 +19,7 @@
   },
   "homepage": "https://github.com/Gerberg1/hello-express#readme",
   "dependencies": {
+    "cors": "^2.8.6",
     "express": "^5.3.0"
   }
 }
