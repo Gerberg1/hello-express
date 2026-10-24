@@ -1,61 +1,63 @@
-const todos = require('./data');
+const messages = require('./data');
 const express = require('express');
-const cors = require('cors')
+//const cors = require('cors')
 
 const server = express();
 server.use(express.json());
 
-server.use(cors());
+//USE CORS
+//server.use(cors());
 
-server.get('/', (req, res) => {
-  res.send('Hello Express.js 🎉');
-});
-
+//SETUP SERVER
 const PORT = 3000;
 
 server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
 
-server.get('/todos', (req, res) => {
-    res.json(todos);
+//GET ALL MESSAGES
+server.get('/messages', (req, res) => {
+    res.json(messages);
 });
 
-server.post('/todos', (req, res) => {
-    const newTodo = {
-        id: todos.length > 0
-            ? Math.max(...todos.map(todo => todo.id)) + 1
+//CREATE MESSAGE
+server.post('/messages', (req, res) => {
+    const newMessage = {
+        id: messages.length > 0
+            ? Math.max(...messages.map(message => message.id)) + 1
             : 1,
-        task: req.body.task,
-        completed: false
+        user: req.body.user,
+        text: req.body.text,
+        timestamp: new Date().toISOString()
     };
 
 
-    todos.push(newTodo);    
-    res.status(201).json(todos);
+    messages.push(newMessage);    
+    res.status(201).json(messages);
 });
 
-server.get('/todos/:id', (req, res) => {
+//GET ONE MESSAGE
+server.get('/messages/:id', (req, res) => {
     const id = Number(req.params.id)
-    const todo = todos.find(todo => todo.id === id)
+    const message = messages.find(message => message.id === id)
 
-    if (!todo) {
-        return res.status(404).json({message: "Todo not found"})
+    if (!message) {
+        return res.status(404).json({message: "Message not found"})
     }
-    res.json(todo);
+    res.json(message);
 });
 
-server.put('/todos/:id', (req, res) => {
+//UPDATE MESSAGE
+server.put('/messages/:id', (req, res) => {
     const id = Number(req.params.id)
-    const todo = todos.find(todo => todo.id === id)
+    const message = messages.find(message => message.id === id)
 
-    if (!todo) {
-        return res.status(404).json({message: "Todo not found"})
+    if (!message) {
+        return res.status(404).json({message: "Message not found"})
     }
 
-    todo.task = req.body.task
-    todo.completed = req.body.completed
-    res.json(todo)
+    message.text = req.body.text
+    res.json(message)
 
     
 });
