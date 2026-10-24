@@ -1,6 +1,6 @@
-const todos = require('./data');
-const express = require('express');
-const cors = require('cors')
+import express from 'express';
+import todos from './data.js';
+import cors from "cors"
 
 const server = express();
 server.use(express.json());

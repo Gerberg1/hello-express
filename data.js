@@ -1,4 +1,4 @@
-const todos = [
+/*const todos = [
     { id: 1, task: "Buy groceries", completed: false },
     { id: 2, task: "Finish homework", completed: false },
     { id: 3, task: "Call mom", completed: false },
@@ -7,7 +7,7 @@ const todos = [
     { id: 6, task: "Write a blog post", completed: false }
 ];
 
-module.exports = todos;
+export default todos;*/
 
 const messages = [
     { id: 1, user: "alex", text: "Hey everyone!", timestamp: "2026-10-24T09:00:00Z" },
@@ -32,4 +32,4 @@ const messages = [
     { id: 20, user: "mike", text: "See you in the next coding session!", timestamp: "2026-10-24T09:18:30Z" }
 ];
 
-module.exports = messages;
+export default messages;
