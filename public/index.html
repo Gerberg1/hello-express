@@ -1,0 +1,291 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>User Manager</title>
+  <style>
+    :root { color-scheme: light; --ink:#172033; --muted:#667085; --line:#e6e9ef; --bg:#f6f7fb; --accent:#4f46e5; --danger:#c62828; }
+    * { box-sizing: border-box; }
+    body { margin:0; background:var(--bg); color:var(--ink); font:16px/1.5 system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif; }
+    header { background:#fff; border-bottom:1px solid var(--line); padding:22px 24px; }
+    header .inner, main { max-width:900px; margin:0 auto; }
+    h1 { margin:0; font-size:1.45rem; letter-spacing:-.03em; }
+    header p { margin:4px 0 0; color:var(--muted); font-size:.95rem; }
+    main { padding:28px 20px 48px; }
+    .panel { background:#fff; border:1px solid var(--line); border-radius:16px; padding:22px; margin-bottom:20px; box-shadow:0 4px 16px #18223008; }
+    .panel-head { display:flex; align-items:center; justify-content:space-between; gap:12px; margin-bottom:16px; }
+    h2 { margin:0; font-size:1.08rem; }
+    .muted { color:var(--muted); font-size:.9rem; }
+    form { display:grid; grid-template-columns:1fr 1fr auto; gap:12px; align-items:end; }
+    label { display:block; font-size:.88rem; font-weight:650; margin-bottom:6px; }
+    input { width:100%; min-width:0; border:1px solid #d5dae3; border-radius:9px; padding:11px 12px; font:inherit; background:#fff; color:var(--ink); }
+    input:focus { outline:3px solid #4f46e51c; border-color:var(--accent); }
+    button { border:0; border-radius:9px; padding:10px 14px; font:inherit; font-weight:650; cursor:pointer; }
+    button:focus-visible { outline:3px solid #4f46e555; outline-offset:2px; }
+    .primary { background:var(--accent); color:white; }
+    .secondary { background:#eef0f5; color:var(--ink); }
+    .danger { background:#fff0f0; color:var(--danger); }
+    .actions { display:flex; gap:8px; flex-wrap:wrap; }
+    .status { margin:0 0 14px; font-size:.92rem; }
+    .status.error { color:var(--danger); }
+    .status.success { color:#18794e; }
+    .table-wrap { overflow-x:auto; }
+    table { width:100%; border-collapse:collapse; text-align:left; }
+    th,td { padding:13px 10px; border-bottom:1px solid var(--line); vertical-align:middle; }
+    th { color:var(--muted); font-size:.8rem; font-weight:700; text-transform:uppercase; letter-spacing:.04em; }
+    td { font-size:.94rem; }
+    tbody tr:last-child td { border-bottom:0; }
+    .avatar { display:inline-grid; place-items:center; width:34px; height:34px; border-radius:50%; background:#eeedff; color:#4338ca; font-weight:750; margin-right:10px; vertical-align:middle; }
+    .person { display:flex; align-items:center; min-width:150px; }
+    .person-name { font-weight:650; }
+    .username { color:var(--muted); }
+    .empty { padding:28px 10px; text-align:center; color:var(--muted); }
+    .count { background:#eef0f5; border-radius:99px; padding:3px 9px; color:#475467; font-size:.82rem; font-weight:700; }
+    @media (max-width:650px) {
+      form { grid-template-columns:1fr; }
+      .panel { padding:16px; }
+      main { padding:18px 12px 36px; }
+      th,td { padding:11px 7px; }
+      .actions button { padding:8px 10px; }
+    }
+  </style>
+</head>
+<body>
+  <header>
+    <div class="inner">
+      <h1>User Manager</h1>
+      <p>A simple dashboard for your Express API</p>
+    </div>
+  </header>
+
+  <main>
+    <section class="panel">
+      <div class="panel-head">
+        <h2 id="formTitle">Add a user</h2>
+        <span class="muted">Fields marked below are required</span>
+      </div>
+      <p id="formStatus" class="status" role="status" aria-live="polite"></p>
+      <form id="userForm">
+        <div>
+          <label for="username">Username</label>
+          <input id="username" name="username" placeholder="e.g. alex123" required maxlength="80" autocomplete="off">
+        </div>
+        <div>
+          <label for="name">Full name</label>
+          <input id="name" name="name" placeholder="e.g. Alex Morgan" required maxlength="120" autocomplete="name">
+        </div>
+        <div class="actions">
+          <button class="primary" id="saveButton" type="submit">Add user</button>
+          <button class="secondary" id="cancelButton" type="button" hidden>Cancel</button>
+        </div>
+      </form>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
+          <h2>Users</h2>
+          <span class="muted">Users stored in your database</span>
+        </div>
+        <div class="actions">
+          <span class="count" id="userCount">0 users</span>
+          <button class="secondary" id="refreshButton" type="button">Refresh</button>
+        </div>
+      </div>
+      <p id="listStatus" class="status" role="status" aria-live="polite"></p>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Username</th><th>Actions</th></tr></thead>
+          <tbody id="usersBody">
+            <tr><td colspan="3" class="empty">Loading users…</td></tr>
+          </tbody>
+        </table>
+      </div>
+    </section>
+  </main>
+
+  <script>
+    // If this page is served by the same Express server, leave API_BASE as "".
+    // If the frontend is hosted separately, set it to your API URL, e.g. "https://api.example.com".
+    const API_BASE = "";
+    const userForm = document.querySelector("#userForm");
+    const usernameInput = document.querySelector("#username");
+    const nameInput = document.querySelector("#name");
+    const usersBody = document.querySelector("#usersBody");
+    const userCount = document.querySelector("#userCount");
+    const formTitle = document.querySelector("#formTitle");
+    const saveButton = document.querySelector("#saveButton");
+    const cancelButton = document.querySelector("#cancelButton");
+    const formStatus = document.querySelector("#formStatus");
+    const listStatus = document.querySelector("#listStatus");
+
+    let editingId = null;
+    let users = [];
+
+    function setStatus(element, message = "", type = "") {
+      element.textContent = message;
+      element.className = "status" + (type ? " " + type : "");
+    }
+
+    async function api(path, options = {}) {
+      const response = await fetch(API_BASE + path, {
+        ...options,
+        headers: { "Content-Type": "application/json", ...(options.headers || {}) }
+      });
+      const raw = await response.text();
+      let data = null;
+      try { data = raw ? JSON.parse(raw) : null; } catch { data = raw; }
+      if (!response.ok) {
+        throw new Error(data?.error || data?.message || `Request failed (${response.status})`);
+      }
+      return data;
+    }
+
+    function resetForm() {
+      editingId = null;
+      userForm.reset();
+      formTitle.textContent = "Add a user";
+      saveButton.textContent = "Add user";
+      cancelButton.hidden = true;
+      setStatus(formStatus);
+    }
+
+    function renderUsers() {
+      userCount.textContent = `${users.length} user${users.length === 1 ? "" : "s"}`;
+      usersBody.replaceChildren();
+
+      if (!users.length) {
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.className = "empty";
+        cell.textContent = "No users yet. Add your first user above.";
+        row.append(cell);
+        usersBody.append(row);
+        return;
+      }
+
+      for (const user of users) {
+        const row = document.createElement("tr");
+        const personCell = document.createElement("td");
+        const person = document.createElement("div");
+        person.className = "person";
+        const avatar = document.createElement("span");
+        avatar.className = "avatar";
+        avatar.textContent = (user.name || user.username || "?").trim().charAt(0).toUpperCase();
+        const personName = document.createElement("span");
+        personName.className = "person-name";
+        personName.textContent = user.name || "Unnamed user";
+        person.append(avatar, personName);
+        personCell.append(person);
+
+        const usernameCell = document.createElement("td");
+        usernameCell.className = "username";
+        usernameCell.textContent = user.username || "—";
+
+        const actionsCell = document.createElement("td");
+        const actions = document.createElement("div");
+        actions.className = "actions";
+        const editButton = document.createElement("button");
+        editButton.type = "button";
+        editButton.className = "secondary";
+        editButton.textContent = "Edit";
+        editButton.addEventListener("click", () => startEdit(user));
+        const deleteButton = document.createElement("button");
+        deleteButton.type = "button";
+        deleteButton.className = "danger";
+        deleteButton.textContent = "Delete";
+        deleteButton.addEventListener("click", () => deleteUser(user));
+        actions.append(editButton, deleteButton);
+        actionsCell.append(actions);
+        row.append(personCell, usernameCell, actionsCell);
+        usersBody.append(row);
+      }
+    }
+
+    async function loadUsers() {
+      setStatus(listStatus, "Loading users…");
+      try {
+        const data = await api("/users");
+        if (!Array.isArray(data)) throw new Error("The API response for /users was not an array.");
+        users = data;
+        renderUsers();
+        setStatus(listStatus, "");
+      } catch (error) {
+        setStatus(listStatus, `${error.message}. Check that your Express server is running and GET /users works.`, "error");
+        usersBody.replaceChildren();
+        const row = document.createElement("tr");
+        const cell = document.createElement("td");
+        cell.colSpan = 3;
+        cell.className = "empty";
+        cell.textContent = "Could not load users.";
+        row.append(cell);
+        usersBody.append(row);
+      }
+    }
+
+    function startEdit(user) {
+      editingId = user.id;
+      usernameInput.value = user.username || "";
+      nameInput.value = user.name || "";
+      formTitle.textContent = `Edit user #${user.id}`;
+      saveButton.textContent = "Save changes";
+      cancelButton.hidden = false;
+      setStatus(formStatus, "Update the fields and save your changes.");
+      usernameInput.focus();
+      window.scrollTo({ top: 0, behavior: "smooth" });
+    }
+
+    userForm.addEventListener("submit", async (event) => {
+      event.preventDefault();
+      const username = usernameInput.value.trim();
+      const name = nameInput.value.trim();
+      if (!username || !name) {
+        setStatus(formStatus, "Please enter both a username and a name.", "error");
+        return;
+      }
+
+      saveButton.disabled = true;
+      try {
+        if (editingId === null) {
+          await api("/users", {
+            method: "POST",
+            body: JSON.stringify({ username, name })
+          });
+          setStatus(formStatus, "User created successfully.", "success");
+        } else {
+          await api(`/users/${encodeURIComponent(editingId)}`, {
+            method: "PUT",
+            body: JSON.stringify({ username, name })
+          });
+          setStatus(formStatus, "User updated successfully.", "success");
+        }
+        resetForm();
+        await loadUsers();
+      } catch (error) {
+        setStatus(formStatus, error.message, "error");
+      } finally {
+        saveButton.disabled = false;
+      }
+    });
+
+    async function deleteUser(user) {
+      const label = user.name || user.username || `#${user.id}`;
+      if (!window.confirm(`Delete ${label}? This cannot be undone.`)) return;
+      try {
+        await api(`/users/${encodeURIComponent(user.id)}`, { method: "DELETE" });
+        if (editingId === user.id) resetForm();
+        setStatus(listStatus, "User deleted.", "success");
+        await loadUsers();
+      } catch (error) {
+        setStatus(listStatus, error.message, "error");
+      }
+    }
+
+    cancelButton.addEventListener("click", resetForm);
+    document.querySelector("#refreshButton").addEventListener("click", loadUsers);
+    loadUsers();
+  </script>
+</body>
+</html>
