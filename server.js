@@ -1,6 +1,6 @@
 import express from 'express';
 import messages from './data.js';
-import db from "./database.js"
+//import db from "./database.js"
 import cors from "cors"
 import { httpServerHandler } from "cloudflare:node";
 
@@ -65,7 +65,7 @@ server.put('/messages/:id', (req, res) => {
     
 });
 
-//***********************USERS********************************************************************
+/*//***********************USERS********************************************************************
 // Get all users
 server.get("/users", async (req, res) => {
     try {
@@ -157,7 +157,7 @@ server.delete("/users/:id", async (req, res) => {
         console.error(error);
         res.status(500).json({ error: "Failed to delete user" });
     }
-});
+});*/
 
 server.listen(3000);
 
