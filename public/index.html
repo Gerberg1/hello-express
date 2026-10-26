@@ -42,6 +42,14 @@
     .username { color:var(--muted); }
     .empty { padding:28px 10px; text-align:center; color:var(--muted); }
     .count { background:#eef0f5; border-radius:99px; padding:3px 9px; color:#475467; font-size:.82rem; font-weight:700; }
+
+    .messages-list { display:grid; gap:12px; }
+    .message-card { border:1px solid var(--line); border-radius:12px; padding:14px 15px; background:#fff; }
+    .message-top { display:flex; justify-content:space-between; align-items:center; gap:12px; margin-bottom:7px; }
+    .message-user { font-weight:700; }
+    .message-time { color:var(--muted); font-size:.8rem; }
+    .message-text { margin:0; white-space:pre-wrap; overflow-wrap:anywhere; }
+
     @media (max-width:650px) {
       form { grid-template-columns:1fr; }
       .panel { padding:16px; }
@@ -85,6 +93,23 @@
     <section class="panel">
       <div class="panel-head">
         <div>
+          <h2>Messages</h2>
+          <span class="muted">Hardcoded messages from your API</span>
+        </div>
+        <div class="actions">
+          <span class="count" id="messageCount">0 messages</span>
+          <button class="secondary" id="refreshMessagesButton" type="button">Refresh messages</button>
+        </div>
+      </div>
+      <p id="messagesStatus" class="status" role="status" aria-live="polite"></p>
+      <div id="messagesList" class="messages-list">
+        <div class="empty">Loading messages…</div>
+      </div>
+    </section>
+
+    <section class="panel">
+      <div class="panel-head">
+        <div>
           <h2>Users</h2>
           <span class="muted">Users stored in your database</span>
         </div>
@@ -119,6 +144,9 @@
     const cancelButton = document.querySelector("#cancelButton");
     const formStatus = document.querySelector("#formStatus");
     const listStatus = document.querySelector("#listStatus");
+    const messagesList = document.querySelector("#messagesList");
+    const messageCount = document.querySelector("#messageCount");
+    const messagesStatus = document.querySelector("#messagesStatus");
 
     let editingId = null;
     let users = [];
@@ -204,6 +232,59 @@
       }
     }
 
+    function formatTimestamp(value) {
+      if (!value) return "";
+      const date = new Date(value);
+      return Number.isNaN(date.getTime()) ? String(value) : date.toLocaleString();
+    }
+
+    async function loadMessages() {
+      setStatus(messagesStatus, "Loading messages…");
+      try {
+        const data = await api("/messages");
+        if (!Array.isArray(data)) throw new Error("The API response for /messages was not an array.");
+        messageCount.textContent = `${data.length} message${data.length === 1 ? "" : "s"}`;
+        messagesList.replaceChildren();
+
+        if (data.length === 0) {
+          const empty = document.createElement("div");
+          empty.className = "empty";
+          empty.textContent = "No messages found in data.js.";
+          messagesList.append(empty);
+        } else {
+          for (const message of data) {
+            const card = document.createElement("article");
+            card.className = "message-card";
+            const top = document.createElement("div");
+            top.className = "message-top";
+            const user = document.createElement("span");
+            user.className = "message-user";
+            user.textContent = message.user || "Unknown user";
+            const time = document.createElement("time");
+            time.className = "message-time";
+            time.textContent = formatTimestamp(message.timestamp);
+            if (message.timestamp) time.dateTime = message.timestamp;
+            top.append(user, time);
+
+            const text = document.createElement("p");
+            text.className = "message-text";
+            text.textContent = message.text || "";
+            card.append(top, text);
+            messagesList.append(card);
+          }
+        }
+        setStatus(messagesStatus, "");
+      } catch (error) {
+        messageCount.textContent = "— messages";
+        messagesList.replaceChildren();
+        const empty = document.createElement("div");
+        empty.className = "empty";
+        empty.textContent = "Could not load messages.";
+        messagesList.append(empty);
+        setStatus(messagesStatus, `${error.message}. Check that GET /messages is available on your server.`, "error");
+      }
+    }
+
     async function loadUsers() {
       setStatus(listStatus, "Loading users…");
       try {
@@ -285,6 +366,8 @@
 
     cancelButton.addEventListener("click", resetForm);
     document.querySelector("#refreshButton").addEventListener("click", loadUsers);
+    document.querySelector("#refreshMessagesButton").addEventListener("click", loadMessages);
+    loadMessages();
     loadUsers();
   </script>
 </body>
