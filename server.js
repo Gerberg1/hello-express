@@ -1,14 +1,13 @@
 import express from 'express';
 import messages from './data.js';
 import db from "./database.js"
-
-//const cors from "cors"
+import cors from "cors"
 
 const server = express();
 server.use(express.json());
 
-//USE CORS
-//server.use(cors());
+
+server.use(cors());
 
 //SETUP SERVER
 const PORT = 3000;
