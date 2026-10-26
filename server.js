@@ -2,6 +2,7 @@ import express from 'express';
 import messages from './data.js';
 import db from "./database.js"
 import cors from "cors"
+import { httpServerHandler } from "cloudflare:node";
 
 const server = express();
 server.use(express.json());
@@ -12,10 +13,10 @@ server.use(cors());
 //SETUP SERVER
 const PORT = 3000;
 
-server.use(express.static("public"));
-server.listen(PORT, () => {
+//server.use(express.static("public"));
+/*server.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
-});
+});*/
 
 //GET ALL MESSAGES
 server.get('/messages', (req, res) => {
@@ -157,3 +158,7 @@ server.delete("/users/:id", async (req, res) => {
         res.status(500).json({ error: "Failed to delete user" });
     }
 });
+
+server.listen(3000);
+
+export default httpServerHandler({ port: 3000 });
